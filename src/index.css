@@ -1,0 +1,141 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* ---------- Design tokens ---------- */
+:root {
+  --bg: #fff8ef;
+  --surface: #ffffff;
+  --surface-2: #fff1e3;
+  --border: #f1e2d3;
+  --ink: #3d3047;
+  --ink-muted: #85788f;
+  --peach: #ff8f66;
+  --peach-soft: #ffe4d6;
+  --mint: #2fae8a;
+  --mint-soft: #d6f3e8;
+  --lavender: #8b74e0;
+  --lavender-soft: #ebe5fc;
+  --sun: #e0a21a;
+  --sun-soft: #fff1cc;
+  --danger: #e04f6c;
+  --danger-soft: #fde0e6;
+  --on-accent: #ffffff;
+  --shadow-color: 61 48 71;
+  --overlay: rgb(61 48 71 / 0.35);
+  color-scheme: light;
+}
+[data-theme='dark'] {
+  --bg: #1d1922;
+  --surface: #29232f;
+  --surface-2: #332b3b;
+  --border: #3d3447;
+  --ink: #f6eef8;
+  --ink-muted: #b2a6bd;
+  --peach: #ffa585;
+  --peach-soft: #4a332f;
+  --mint: #6cd6b6;
+  --mint-soft: #213f37;
+  --lavender: #b5a4f7;
+  --lavender-soft: #352e50;
+  --sun: #ffd27a;
+  --sun-soft: #463a22;
+  --danger: #ff8aa0;
+  --danger-soft: #4b2631;
+  --on-accent: #1d1922;
+  --shadow-color: 0 0 0;
+  --overlay: rgb(0 0 0 / 0.55);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: 'Nunito Variable', ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--border);
+  --color-ink: var(--ink);
+  --color-muted: var(--ink-muted);
+  --color-peach: var(--peach);
+  --color-peach-soft: var(--peach-soft);
+  --color-mint: var(--mint);
+  --color-mint-soft: var(--mint-soft);
+  --color-lavender: var(--lavender);
+  --color-lavender-soft: var(--lavender-soft);
+  --color-sun: var(--sun);
+  --color-sun-soft: var(--sun-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-on-accent: var(--on-accent);
+  --radius-card: 1.5rem;
+  --shadow-soft: 0 1px 2px rgb(var(--shadow-color) / 0.04), 0 6px 20px -6px rgb(var(--shadow-color) / 0.14);
+  --shadow-lift: 0 2px 4px rgb(var(--shadow-color) / 0.06), 0 14px 34px -10px rgb(var(--shadow-color) / 0.28);
+}
+
+/* ---------- Base (layered so utilities win) ---------- */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html,
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    overscroll-behavior-y: none;
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+  /* iOS zooms in on inputs under 16px */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+  :focus-visible {
+    outline: 3px solid var(--lavender);
+    outline-offset: 2px;
+  }
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pl-safe {
+  padding-left: env(safe-area-inset-left);
+}
+@utility pr-safe {
+  padding-right: env(safe-area-inset-right);
+}
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

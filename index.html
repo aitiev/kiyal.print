@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#FFF8EF" />
+    <meta name="description" content="KyialPrint — заказы и расходы мастерской" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="KyialPrint" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+    <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon-180.png" />
+    <title>KyialPrint</title>
+    <script>
+      // Apply the saved theme before first paint so it doesn't flash.
+      try {
+        var p = JSON.parse(localStorage.getItem('kp.prefs') || '{}')
+        var th = p.theme || 'system'
+        if (th === 'system') th = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        document.documentElement.dataset.theme = th
+        if (p.lang) document.documentElement.lang = p.lang
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
