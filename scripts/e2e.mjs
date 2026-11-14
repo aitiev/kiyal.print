@@ -95,6 +95,13 @@ console.log('Orders')
 await page.goto(`${base}#/orders`, { waitUntil: 'networkidle0' })
 await page.evaluate(() => localStorage.setItem('kp.prefs', JSON.stringify({ lang: 'ru' })))
 
+await step('dashboard empty state offers a new order and demo data', async () => {
+  await page.goto(`${base}#/dashboard`, { waitUntil: 'networkidle0' })
+  await waitText('Здесь появится ваша статистика')
+  await waitText('Посмотреть на демо-данных')
+  await page.goto(`${base}#/orders`, { waitUntil: 'networkidle0' })
+})
+
 await step('empty state is shown', async () => waitText('Пусто, как чистая раскраска'))
 
 await step('validation shows inline errors', async () => {
@@ -289,6 +296,65 @@ await step('ads tab: add, edit, delete + undo', async () => {
 await step('expenses survive a reload', async () => {
   await page.reload({ waitUntil: 'networkidle0' })
   await waitText('Бумага A4')
+})
+
+// ---------------------------------------------------------------- Dashboard
+console.log('Dashboard')
+await page.goto('about:blank')
+await page.goto(`${base}#/settings`, { waitUntil: 'networkidle0' })
+
+await step('seed demo data, dashboard numbers and chart render', async () => {
+  await page.click('[data-testid=seed-demo]')
+  await page.waitForSelector('[data-testid=remove-demo]', { timeout: 8000 })
+  // The "demo added" toast sits over the bottom of the page for 3 s.
+  await page.waitForFunction(() => !document.querySelector('[role=status]'), { timeout: 6000 })
+  await page.goto(`${base}#/dashboard`, { waitUntil: 'networkidle0' })
+  await page.waitForSelector('[data-testid=stats]')
+  await waitText('Чистая прибыль')
+  await page.waitForSelector('[data-testid=income-chart] .recharts-bar-rectangle', { timeout: 6000 })
+  await waitText('Окупаемость')
+  const received = await page.$eval('[data-testid=stats]', (el) => el.innerText.replace(/[\u00a0\u202f]/g, ' '))
+  assert(/Получено\s+[\d ]+ сом/.test(received), 'received is not a money value')
+})
+
+await step('period switch to all time keeps the chart', async () => {
+  await clickText('Всё время', '[role=tab]')
+  await page.waitForSelector('[role=tab][aria-selected=true] ::-p-text(Всё время)')
+  await page.waitForSelector('[data-testid=income-chart] .recharts-bar-rectangle', { timeout: 6000 })
+  await clickText('Этот месяц', '[role=tab]')
+})
+
+await step('set a monthly goal → progress, then remove it', async () => {
+  await clickText('Поставить цель')
+  await typeInto('Сумма', '50000')
+  await clickText('Сохранить')
+  await waitText('Цель сохранена')
+  await noDialog()
+  await waitText('из 50 000 сом')
+  await page.waitForSelector('[data-testid=income-goal] [role=progressbar]')
+  await page.click('button[aria-label="Изменить цель на месяц"]')
+  await clickButtonExact('Убрать цель')
+  await waitText('Цель убрана')
+  await noDialog()
+  await waitText('Поставить цель')
+})
+
+await step('due strip opens the order', async () => {
+  await page.waitForSelector('[data-testid=due-strip] button')
+  await page.click('[data-testid=due-strip] button')
+  await page.waitForSelector('[role=dialog]')
+  await settled()
+  await waitText('Сохранить')
+  await page.keyboard.press('Escape')
+  await noDialog()
+})
+
+await step('pending card opens orders filtered by payment', async () => {
+  await clickText('Ждём оплату')
+  await page.waitForFunction(() => location.hash === '#/orders', { timeout: 4000 })
+  await waitText('Не оплачено')
+  const paid = await page.evaluate(() => document.body.innerText.includes('Оплачено'))
+  assert(!paid, 'paid orders are still listed')
 })
 
 await browser.close()

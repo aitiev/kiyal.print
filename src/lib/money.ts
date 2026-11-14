@@ -28,6 +28,11 @@ export function percentOf(amount: Minor, pct: number): Minor {
   return Math.round((amount * pct) / 100)
 }
 
+/** Round to a whole major unit (for approximate figures such as averages). */
+export function roundToMajor(amount: Minor): Minor {
+  return Math.round(amount / MINOR_PER_MAJOR) * MINOR_PER_MAJOR
+}
+
 /** amount / n rounded to a minor unit; null when n is not positive. */
 export function divideMinor(amount: Minor, n: number): Minor | null {
   if (!(n > 0) || !Number.isFinite(n)) return null

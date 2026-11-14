@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { Period } from '@/lib/dates'
 
 export type Tab = 'dashboard' | 'orders' | 'expenses' | 'settings'
 export const TABS: Tab[] = ['dashboard', 'orders', 'expenses', 'settings']
@@ -36,6 +37,9 @@ function tabFromHash(): Tab {
 interface UIState {
   tab: Tab
   setTab: (t: Tab) => void
+  /** Dashboard period. */
+  period: Period
+  setPeriod: (p: Period) => void
   expensesView: ExpensesView
   setExpensesView: (v: ExpensesView) => void
   sheet: SheetState
@@ -55,6 +59,8 @@ export const useUI = create<UIState>((set) => ({
     if (location.hash !== `#/${tab}`) history.replaceState(null, '', `#/${tab}`)
     set({ tab })
   },
+  period: 'this_month',
+  setPeriod: (period) => set({ period }),
   expensesView: 'expenses',
   setExpensesView: (expensesView) => set({ expensesView }),
   sheet: null,

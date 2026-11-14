@@ -80,3 +80,15 @@
 - Russian month headers no longer end with " г." (`formatMonth` → "Ноябрь 2026").
 - `scripts/e2e.mjs` now calls `process.exit`, because lingering puppeteer handles kept node alive ~4.5 min after finishing.
 - Unit cost is shown as "{price} / {unit}" (free-text units made "за листов" ungrammatical).
+
+## Phase 5: Dashboard & goals (2026-11-15)
+**Added**
+- `features/dashboard/`:
+  - `DashboardScreen`: period switcher (`useUI().period`, default `this_month`; labels from `dashboard.periodShort`), due strip, 7 StatCards (received, pending, orders, average, expenses, ads, net). Net spans two columns and is coloured by sign. Tapping "Pending" resets the order filters, applies `payment: ['unpaid','half']` and opens Orders. Skeletons while `useDataset()` loads; with no data at all, an empty state with "New order" and "Try demo data" (→ Settings).
+  - `IncomeChart` (lazy-loaded, so Recharts gets its own ~370 kB chunk that is still precached): income vs costs bars themed with CSS variables, a compact axis without the currency ("1,2 тыс."), a themed tooltip with full money values, a legend, and a text empty state when every bucket is zero.
+  - `GoalCards`: `BreakEvenCard` (all-time ProgressBar, "{received} of {costs}", "N more orders at {avg}" / reached 🎉 / no-orders fallback) and `IncomeGoalCard` (this month's received vs the `monthly_income` goal; set/edit/remove through a small sheet; validation: required, number, > 0).
+  - `DueStrip`: horizontal scroll-snap cards (overdue first, then due within 3 days) with `DueBadge`; tap opens the order sheet. Hidden when empty.
+- `lib/money.ts`: `roundToMajor()` (averages are shown in whole som).
+- `Card` accepts `data-testid`.
+- i18n `dashboard.*` in ru and en.
+- e2e: a dashboard empty-state check plus a "Dashboard" section (seed → stats + chart, period switch, goal set/remove, due strip opens order, pending → filtered Orders). 23 flows in ~30 s.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { divideMinor, formatMoney, fromMinor, parseDecimal, parseMoney, percentOf, sumMinor, toInputString, toMinor } from './money'
+import { divideMinor, formatMoney, fromMinor, parseDecimal, parseMoney, percentOf, roundToMajor, sumMinor, toInputString, toMinor } from './money'
 
 describe('money', () => {
   it('converts without float drift', () => {
@@ -47,5 +47,13 @@ describe('money', () => {
     expect(toInputString(120050, 'en')).toBe('1200.5')
     expect(toInputString(80000, 'ru')).toBe('800')
     expect(toInputString(undefined, 'ru')).toBe('')
+  })
+})
+
+describe('roundToMajor', () => {
+  it('rounds to whole som', () => {
+    expect(roundToMajor(96409)).toBe(96400)
+    expect(roundToMajor(96450)).toBe(96500)
+    expect(roundToMajor(0)).toBe(0)
   })
 })

@@ -29,6 +29,10 @@ export function Page({ title, subtitle, actions, children }: PageProps) {
   )
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-card bg-surface p-4 shadow-soft ${className}`}>{children}</section>
+export function Card({ children, className = '', ...rest }: { children: ReactNode; className?: string; 'data-testid'?: string }) {
+  return (
+    <section className={`rounded-card bg-surface p-4 shadow-soft ${className}`} {...rest}>
+      {children}
+    </section>
+  )
 }
