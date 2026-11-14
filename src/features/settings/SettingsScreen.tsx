@@ -3,6 +3,7 @@ import { SegmentedControl } from '@/components/SegmentedControl'
 import { useT } from '@/hooks/useT'
 import { usePrefs, type ThemePref } from '@/store/prefs'
 import type { Lang } from '@/lib/i18n'
+import { DemoDataCard } from './DemoDataCard'
 
 export function SettingsScreen() {
   const { t } = useT()
@@ -35,6 +36,7 @@ export function SettingsScreen() {
             ]}
           />
         </Card>
+        <DemoDataCard />
       </div>
     </Page>
   )

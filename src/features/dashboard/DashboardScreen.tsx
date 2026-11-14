@@ -22,7 +22,7 @@ export function DashboardScreen() {
         emoji="📒"
         title={t('common.comingSoon')}
         body={t('dashboard.empty')}
-        action={<Button onClick={() => openSheet({ kind: 'demo' })}>{t('fab.newOrder')}</Button>}
+        action={<Button onClick={() => openSheet({ kind: 'order' })}>{t('fab.newOrder')}</Button>}
       />
     </Page>
   )

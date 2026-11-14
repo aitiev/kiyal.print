@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useIsWide } from '@/hooks/useMedia'
+import { useUI } from '@/store/ui'
 import { useT } from '@/hooks/useT'
 import { cn } from '@/lib/cn'
 
@@ -33,8 +34,11 @@ export function Sheet({ open, onClose, title, children, footer, size = 'md' }: S
     document.body.style.overflow = 'hidden'
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
-    const raf = requestAnimationFrame(() => panelRef.current?.focus())
+    // preventScroll: focusing while the panel slides in would scroll the overlay and misplace it.
+    const raf = requestAnimationFrame(() => panelRef.current?.focus({ preventScroll: true }))
+    useUI.setState((s) => ({ sheetDepth: s.sheetDepth + 1 }))
     return () => {
+      useUI.setState((s) => ({ sheetDepth: Math.max(0, s.sheetDepth - 1) }))
       document.body.style.overflow = prev
       window.removeEventListener('keydown', onKey)
       cancelAnimationFrame(raf)

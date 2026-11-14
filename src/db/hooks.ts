@@ -1,4 +1,7 @@
-/** Live-query hooks: return `undefined` while loading, then re-render on every DB change. */
+/**
+ * Live-query hooks: return `undefined` while loading, then re-render on every DB change.
+ * Single-row hooks return `null` when the row does not exist (or no id was given).
+ */
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './schema'
 import { adsRepo } from './repositories/ads'
@@ -8,11 +11,11 @@ import { ordersRepo } from './repositories/orders'
 import type { Dataset } from '@/lib/stats'
 
 export const useOrders = () => useLiveQuery(() => ordersRepo.list(), [])
-export const useOrder = (id: string | undefined) => useLiveQuery(() => (id ? db.orders.get(id) : undefined), [id])
+export const useOrder = (id: string | undefined) => useLiveQuery(() => (id ? db.orders.get(id).then((r) => r ?? null) : null), [id])
 export const useExpenses = () => useLiveQuery(() => expensesRepo.list(), [])
-export const useExpense = (id: string | undefined) => useLiveQuery(() => (id ? db.expenses.get(id) : undefined), [id])
+export const useExpense = (id: string | undefined) => useLiveQuery(() => (id ? db.expenses.get(id).then((r) => r ?? null) : null), [id])
 export const useAds = () => useLiveQuery(() => adsRepo.list(), [])
-export const useAd = (id: string | undefined) => useLiveQuery(() => (id ? db.ads.get(id) : undefined), [id])
+export const useAd = (id: string | undefined) => useLiveQuery(() => (id ? db.ads.get(id).then((r) => r ?? null) : null), [id])
 export const useGoals = () => useLiveQuery(() => goalsRepo.list(), [])
 
 /** Everything the dashboard needs, in one consistent read. */

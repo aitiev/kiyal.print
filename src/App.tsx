@@ -7,7 +7,8 @@ import { DashboardScreen } from '@/features/dashboard/DashboardScreen'
 import { OrdersScreen } from '@/features/orders/OrdersScreen'
 import { ExpensesScreen } from '@/features/expenses/ExpensesScreen'
 import { SettingsScreen } from '@/features/settings/SettingsScreen'
-import { DemoSheet } from '@/features/DemoSheet'
+import { OrderFormSheet } from '@/features/orders/OrderFormSheet'
+import { HalfPaymentSheet } from '@/features/orders/HalfPaymentSheet'
 import { useApplyPrefs } from '@/hooks/useTheme'
 import { useT } from '@/hooks/useT'
 import { useUI } from '@/store/ui'
@@ -19,14 +20,9 @@ export default function App() {
   const expensesView = useUI((s) => s.expensesView)
   const openSheet = useUI((s) => s.openSheet)
 
-  const fab =
-    tab === 'orders' || tab === 'dashboard'
-      ? { label: t('fab.newOrder'), run: () => openSheet({ kind: 'demo' }) }
-      : tab === 'expenses'
-        ? expensesView === 'ads'
-          ? { label: t('fab.newAd'), run: () => openSheet({ kind: 'demo' }) }
-          : { label: t('fab.newExpense'), run: () => openSheet({ kind: 'demo' }) }
-        : null
+  // Expenses/ads FAB arrives with their sheets in Phase 4.
+  void expensesView
+  const fab = tab === 'orders' || tab === 'dashboard' ? { label: t('fab.newOrder'), run: () => openSheet({ kind: 'order' }) } : null
 
   return (
     <div className="min-h-dvh pl-safe pr-safe md:pl-[calc(7rem+env(safe-area-inset-left))]">
@@ -38,7 +34,8 @@ export default function App() {
       </AnimatePresence>
       <BottomNav />
       <Fab visible={!!fab} label={fab?.label ?? ''} onClick={() => fab?.run()} />
-      <DemoSheet />
+      <OrderFormSheet />
+      <HalfPaymentSheet />
       <ConfirmHost />
       <Toaster />
     </div>

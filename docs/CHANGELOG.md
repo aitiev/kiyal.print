@@ -38,3 +38,25 @@
 - `scripts/shots.mjs` now also checks that `settings.prefs` exists in IndexedDB.
 
 **Decisions:** a "paid" order never counts as pending; income in charts is attributed to the order's `createdAt` (no separate payment date); `amountReceived` is clamped to `[0, price]` in `setPayment`, and the form rejects amount > price. Replace-restore also replaces settings (including PIN).
+
+## Phase 3: Orders (2026-11-14)
+**Added**
+- `features/orders/`:
+  - `OrdersScreen`: sticky search (name/topic, deferred), work-status quick chips with counts, a filter button with an active-count badge, an iPad 2-column grid, skeleton/empty/no-results states, animated list.
+  - `OrderCard`: product emoji tile, price, topic, work chip, `DueBadge`. Bottom row: a one-tap payment pill (cycle) and a "next work status" button. Tap the top area to edit.
+  - `OrderFormSheet`: create/edit via `useUI().sheet = {kind:'order', id?}`. Smart defaults; changing the status re-defaults the amount until it is edited by hand; on blur the amount re-infers the status. Clearable due date; collapsible "details" section (phone `tel`, extra-pages stepper, gift, source chips, notes). Inline errors with focus on the first invalid field; delete (confirm + undo) in the footer.
+  - `OrderFilterSheet`: sort key + direction, payment/work/product multi-select chips, due date range, reset, "Show · N orders".
+  - `HalfPaymentSheet`: "how much was received?" prompt (pre-filled 50%, 30/50/70% shortcuts) opened by the quick action unpaid → half; the status is inferred from the amount.
+  - `useOrderActions()`: `cyclePayment`, `setReceived`, `advanceWork`, `remove`, all with undo toasts (restore the previous row).
+  - `DueBadge`, `meta.ts` (tones/emoji per product, payment and work status).
+- `src/store/orders.ts`: `useOrdersUI` (filter, sort, filtersOpen, halfPromptId).
+- `src/hooks/useMoney.ts` (`money(minor)`, `money.unit`); `src/hooks/useToday.ts` (render-safe start of today that updates on day change or app resume; use it instead of `Date.now()` in render; required by the React-compiler lint rule `react-hooks/purity`).
+- Settings → **Demo data** card (`DemoDataCard`, pulled forward from Phase 6): add/remove, labelled "Демо".
+- i18n: `orders.*` (products, statuses, sources, due texts with plurals, form, toasts, a11y), `settings.demo*`.
+- `scripts/e2e.mjs` (`npm run e2e`, needs `vite preview` on :4173): 10 orders flows (validation, create with half payment, one-tap payment + undo, advance, unpaid → half prompt, edit, delete + undo, search/reset, persistence). `scripts/shots.mjs`: `--seed` flag and `tab:click=<selector>` actions; each route does a fresh load.
+
+**Changed / fixed**
+- Removed `features/DemoSheet.tsx` and the `'demo'` sheet kind. FAB on Home/Orders opens a new order; on Expenses it's hidden until Phase 4.
+- `useOrder/useExpense/useAd` return `null` for a missing row (`undefined` = loading).
+- `Sheet`: focuses the panel with `preventScroll`, because focusing during the slide-in scrolled the overlay and left the sheet half off-screen; it also tracks `useUI().sheetDepth`. Don't use `autoFocus` inside sheets.
+- `Toaster`: moves to the top of the screen while any sheet is open, so it never covers sheet buttons.

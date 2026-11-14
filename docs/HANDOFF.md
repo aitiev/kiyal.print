@@ -1,24 +1,26 @@
 # Handoff: start here
 
-**Current state:** Phases 1–2 are done (shell + design system; domain logic, DB, repositories, backup, seed, 48 tests). **Next: Phase 3, Orders UI** (`docs/PLAN.md` → Phase 3). The UI still shows Phase 1 placeholders, and the FAB opens `features/DemoSheet.tsx` (delete it in Phase 3).
+**Current state:** Phases 1–3 are done (shell; domain/DB/backup/seed; Orders UI). **Next: Phase 4, Expenses & Ads** (`docs/PLAN.md` → Phase 4). Settings already has the Demo-data card (seed it to review lists).
 
 ## How to work
-- `npm run check`: typecheck + lint + test + build (must pass before committing).
-- Smoke test: `npm run build && (npx vite preview --port 4173 &)` then `npm run shots` (or `node scripts/shots.mjs http://localhost:4173/ <outDir> orders orders:fab`). It checks iPhone/iPad × light/dark screenshots, console errors, horizontal overflow, the IndexedDB prefs row and offline reload. Uses local Chrome via puppeteer-core. Kill the preview afterwards: `pkill -f "vite preview"`.
-- Finish the phase: append to `docs/CHANGELOG.md` (it lists every module's API in detail), rewrite this file, and `git commit`.
-- Write ` ` escapes, never literal NBSP characters (ESLint `no-irregular-whitespace`).
+- `npm run check`: typecheck + lint + test + build. Must pass before committing.
+- Preview: `npm run build && (npx vite preview --port 4173 --strictPort > /tmp/kp-preview.log 2>&1 &)`, then:
+  - `npm run e2e`: UI flows (extend `scripts/e2e.mjs` with an "Expenses" section; helpers: `clickText`, `clickButtonExact`, `typeInto(label, value)`, `fieldValue`, `waitText`, `settled`, `noDialog`).
+  - `node scripts/shots.mjs --seed http://localhost:4173/ <dir> expenses expenses:fab "expenses:click=<css>"`: iPhone/iPad × light/dark screenshots + console/overflow/offline checks.
+  - Stop the preview with `pkill -f "vite preview --port 4173"`.
+- Finish the phase: append to `docs/CHANGELOG.md`, rewrite this file, then `git commit`.
+- Gotchas: use ` ` escapes, never literal NBSP characters. No `Date.now()` in render (use `useToday()`). No `autoFocus` in sheets. Avoid `$$` inside bash heredocs (it trips a safety check); edit files with Edit/Write instead.
 
-## Key APIs (details in CHANGELOG, Phase 1 and 2 sections)
-- **UI kit** `src/components/`: `Page`/`Card`, `Sheet` (open, onClose, title, footer, size), `Field` (render-prop `(id, describedBy, invalid)`), `TextInput/SelectInput/TextArea`, `Button`, `Chip` (badge, or toggle with onClick/selected; tones in `tone.ts`), `StatCard`, `SegmentedControl`, `EmptyState`, `SkeletonList`, `ProgressBar`, `Fab`.
-- **State** `src/store/ui.ts`: `useUI` (tab, `sheet {kind:'order'|'expense'|'ad', id?}`, `openSheet/closeSheet`, `expensesView`), `toast({message, actionLabel, onAction})`, `await confirmDialog({title, body, confirmLabel, danger})`. `src/store/prefs.ts`: `usePrefs` (lang, theme, currency, currencySymbol, set).
-- **i18n**: `const { t, tp, lang } = useT()`; add each key to both `ru.ts` and `en.ts`.
-- **Data**: `import { ordersRepo, ... } from '@/db'`; hooks in `@/db/hooks` (`useOrders()`, `useOrder(id)`...; `undefined` = loading → show `SkeletonList`).
-- **Logic**: `@/lib/validation` (`parseOrderForm`), `@/lib/forms` (`orderToForm`), `@/lib/defaults` (`newOrderDraft(now, t('…gift'))`, `defaultAmountReceived`, `nextWorkStatus`, `nextPaymentStatus`), `@/lib/orderQuery` (`queryOrders`, `EMPTY_FILTER`, `DEFAULT_SORT`, `activeFilterCount`), `@/lib/stats` (`dueState`), `@/lib/money` (`formatMoney(minor, {lang, currency, symbol: currencySymbol})`), `@/lib/dates` (`formatDate`).
+## Patterns to copy from Orders (Phase 3)
+- Sheet form: `features/orders/OrderFormSheet.tsx`. The outer component reads `useUI().sheet`, loads the row with `useExpense(id)` / `useAd(id)` (`undefined` = loading → Skeleton, `null` = not found), renders `<Body key={id ?? 'new'}>`, and has a footer submit button with `form={FORM_ID}` (+ a delete icon button in edit mode). The body keeps raw-string form state (`expenseToForm`/`adToForm` from `@/lib/forms`), validates with `parseExpenseForm/parseAdForm` (`@/lib/validation`), shows `t(errors[k])`, re-validates live after the first submit, and focuses the first `[aria-invalid="true"]`.
+- Undo: `const removed = await expensesRepo.remove(id); toast({message, actionLabel: t('common.undo'), onAction: () => void expensesRepo.restore(removed)})` after a `confirmDialog`.
+- Money: `const money = useMoney()` → `money(minor)`, `money.unit` for labels. Dates: `formatDate(iso, lang)`, `formatMonth('YYYY-MM', lang)`.
+- Lists: `SkeletonList` while `undefined`, `EmptyState` with a CTA, `AnimatePresence mode="popLayout"` + `motion.article layout`.
 
-## Phase 3 checklist (Orders)
-1. i18n labels: products, payment and work statuses, sources, order form field labels/placeholders, the default gift ("Наклейка"/"Sticker"), sort/filter labels, due badges (overdue/today/in N days), and toasts (saved/deleted/undo).
-2. A `useMoney()` hook (formatMoney bound to prefs) in `src/hooks/`.
-3. Order filter + sort state in Zustand (`src/store/orders.ts`, using `EMPTY_FILTER`/`DEFAULT_SORT`).
-4. `features/orders/`: `OrdersScreen` (search field, filter button with badge → filter sheet, sort menu, list of `OrderCard`, empty/skeleton states, a "no results" state with a reset-filters button), `OrderCard` (child, product chip, topic, price, payment chip = one-tap cycle via `nextPaymentStatus`; `half` asks for the amount pre-filled with 50%, work-status advance button, due badge via `dueState`; tap opens edit), `OrderFormSheet` (create/edit from `useUI().sheet`, `orderToForm` ↔ `parseOrderForm`, inline errors, changing the payment status re-defaults the amount, a clear-due-date button, `inputMode` decimal/tel/numeric, delete with `confirmDialog` + undo toast via `ordersRepo.remove/restore`).
-5. Wire the FAB in `App.tsx` to `openSheet({kind:'order'})`; remove `DemoSheet`.
-6. On iPad use a 2-column card grid. Run the smoke test with `orders` and `orders:fab`.
+## Phase 4 checklist (Expenses & Ads)
+1. i18n `expenses.*`: categories (`paper, printing, velcro_felt, packaging, other`), form labels (title, price, date, qty, unit + unit suggestions such as листов/шт/м/упаковок), unit-cost text ("{price} за {unit}"), month total, per-category totals, toasts, ad fields (title, channel + suggestions Instagram/Telegram/WhatsApp/Листовки, cost, date, notes), empty states for ads.
+2. `ExpensesScreen`: the existing `SegmentedControl` (`useUI().expensesView`), lists grouped with `groupByMonth` (`@/lib/stats`) and sticky month headers showing the month total. For expenses, per-category totals at the top of each month (`categoryTotals`, coloured chips or mini bars). Cards show unit cost via `unitCost()` when qty is set.
+3. `ExpenseFormSheet` (`sheet.kind === 'expense'`) and `AdFormSheet` (`'ad'`): date input `max={todayISO()}` (no future dates), `inputMode="decimal"` for price/qty, `<datalist>` for unit/channel suggestions, live unit-cost preview.
+4. `App.tsx`: FAB on Expenses → `openSheet({kind: expensesView === 'ads' ? 'ad' : 'expense'})` (the `fab` variable; `expensesView` is already read there). Mount both sheets.
+5. Category tones: paper→lavender, printing→peach, velcro_felt→mint, packaging→sun, other→neutral (create `features/expenses/meta.ts`).
+6. Extend the e2e flows (add expense with qty → unit cost shown; future date rejected; ad add/edit/delete + undo; month grouping) and take shots.

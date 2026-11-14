@@ -10,7 +10,6 @@ export type SheetState =
   | { kind: 'order'; id?: string }
   | { kind: 'expense'; id?: string }
   | { kind: 'ad'; id?: string }
-  | { kind: 'demo' }
   | null
 
 export interface Toast {
@@ -44,6 +43,8 @@ interface UIState {
   closeSheet: () => void
   toasts: Toast[]
   confirm: ConfirmRequest | null
+  /** Number of open sheets/dialogs (toasts move to the top while > 0). */
+  sheetDepth: number
 }
 
 let toastSeq = 1
@@ -61,6 +62,7 @@ export const useUI = create<UIState>((set) => ({
   closeSheet: () => set({ sheet: null }),
   toasts: [],
   confirm: null,
+  sheetDepth: 0,
 }))
 
 /** Show a toast. Returns its id. */

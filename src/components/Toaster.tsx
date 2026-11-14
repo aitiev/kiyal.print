@@ -36,8 +36,16 @@ function ToastItem({ toast }: { toast: Toast }) {
 /** Toast stack above the bottom nav. */
 export function Toaster() {
   const toasts = useUI((s) => s.toasts)
+  // With a sheet open, toasts go to the top so they never cover sheet buttons.
+  const top = useUI((s) => s.sheetDepth > 0)
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-[60] flex flex-col items-center gap-2 px-4 md:bottom-6">
+    <div
+      className={
+        top
+          ? 'pointer-events-none fixed inset-x-0 top-[max(0.75rem,env(safe-area-inset-top))] z-[60] flex flex-col items-center gap-2 px-4'
+          : 'pointer-events-none fixed inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-[60] flex flex-col items-center gap-2 px-4 md:bottom-6'
+      }
+    >
       <AnimatePresence initial={false}>
         {toasts.map((t) => (
           <ToastItem key={t.id} toast={t} />
