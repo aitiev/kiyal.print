@@ -44,6 +44,25 @@ try {
     if (!navigator.serviceWorker.controller)
       await new Promise((r) => navigator.serviceWorker.addEventListener('controllerchange', r, { once: true }))
   })
+  // DB: the prefs row must be mirrored into IndexedDB settings.
+  const prefs = await page.evaluate(
+    () =>
+      new Promise((res) => {
+        const req = indexedDB.open('kyialprint')
+        req.onerror = () => res(null)
+        req.onsuccess = () => {
+          try {
+            const g = req.result.transaction('settings').objectStore('settings').get('prefs')
+            g.onsuccess = () => res(g.result ?? null)
+            g.onerror = () => res(null)
+          } catch {
+            res(null)
+          }
+        }
+      }),
+  )
+  console.log(prefs ? `DB: OK (prefs ${JSON.stringify(prefs.value)})` : 'DB: prefs row missing')
+  if (!prefs) errors.push('IndexedDB settings.prefs missing')
   await page.setOfflineMode(true)
   await page.reload({ waitUntil: 'networkidle0' })
   const ok = await page.evaluate(() => !!document.querySelector('nav') && document.body.innerText.length > 20)

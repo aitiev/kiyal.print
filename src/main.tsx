@@ -4,8 +4,12 @@ import { registerSW } from 'virtual:pwa-register'
 import '@fontsource-variable/nunito'
 import './index.css'
 import App from './App'
+import { initPrefsSync } from './db/prefsSync'
 
 registerSW({ immediate: true })
+void initPrefsSync()
+// Ask the browser not to evict IndexedDB under storage pressure (best effort; Safari may ignore).
+void navigator.storage?.persist?.().catch(() => false)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
