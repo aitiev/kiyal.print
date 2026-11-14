@@ -9,6 +9,8 @@ import { ExpensesScreen } from '@/features/expenses/ExpensesScreen'
 import { SettingsScreen } from '@/features/settings/SettingsScreen'
 import { OrderFormSheet } from '@/features/orders/OrderFormSheet'
 import { HalfPaymentSheet } from '@/features/orders/HalfPaymentSheet'
+import { ExpenseFormSheet } from '@/features/expenses/ExpenseFormSheet'
+import { AdFormSheet } from '@/features/expenses/AdFormSheet'
 import { useApplyPrefs } from '@/hooks/useTheme'
 import { useT } from '@/hooks/useT'
 import { useUI } from '@/store/ui'
@@ -20,9 +22,14 @@ export default function App() {
   const expensesView = useUI((s) => s.expensesView)
   const openSheet = useUI((s) => s.openSheet)
 
-  // Expenses/ads FAB arrives with their sheets in Phase 4.
-  void expensesView
-  const fab = tab === 'orders' || tab === 'dashboard' ? { label: t('fab.newOrder'), run: () => openSheet({ kind: 'order' }) } : null
+  const fab =
+    tab === 'orders' || tab === 'dashboard'
+      ? { label: t('fab.newOrder'), run: () => openSheet({ kind: 'order' }) }
+      : tab === 'expenses'
+        ? expensesView === 'ads'
+          ? { label: t('fab.newAd'), run: () => openSheet({ kind: 'ad' }) }
+          : { label: t('fab.newExpense'), run: () => openSheet({ kind: 'expense' }) }
+        : null
 
   return (
     <div className="min-h-dvh pl-safe pr-safe md:pl-[calc(7rem+env(safe-area-inset-left))]">
@@ -36,6 +43,8 @@ export default function App() {
       <Fab visible={!!fab} label={fab?.label ?? ''} onClick={() => fab?.run()} />
       <OrderFormSheet />
       <HalfPaymentSheet />
+      <ExpenseFormSheet />
+      <AdFormSheet />
       <ConfirmHost />
       <Toaster />
     </div>

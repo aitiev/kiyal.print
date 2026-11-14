@@ -60,3 +60,23 @@
 - `useOrder/useExpense/useAd` return `null` for a missing row (`undefined` = loading).
 - `Sheet`: focuses the panel with `preventScroll`, because focusing during the slide-in scrolled the overlay and left the sheet half off-screen; it also tracks `useUI().sheetDepth`. Don't use `autoFocus` inside sheets.
 - `Toaster`: moves to the top of the screen while any sheet is open, so it never covers sheet buttons.
+
+## Phase 4: Expenses & Ads (2026-11-14)
+**Added**
+- `features/expenses/`:
+  - `ExpensesScreen`: Expenses/Ads `SegmentedControl` (`useUI().expensesView`), all-time total in the subtitle, lists grouped by month (`groupByMonth`) with sticky month headers + month totals. For expenses, each month has a proportional category bar + per-category total chips (`categoryTotals`). iPad 2-column grid, skeletons, empty states with CTA.
+  - `ExpenseCard` / `AdCard`: category emoji tile, title, date · category (or channel), amount, plus a mint line with "qty unit · unit cost / unit" (expenses) or notes (ads). Tap opens edit.
+  - `ExpenseFormSheet` (`sheet.kind === 'expense'`): title, amount, date (`max` = today; validation rejects future dates), qty + unit with `<datalist>` suggestions, live unit-cost preview, category chips.
+  - `AdFormSheet` (`'ad'`): title, channel (datalist: Instagram/Telegram/WhatsApp/Блогер/Листовки), cost, date (≤ today), notes.
+  - `useExpenseActions()`: `removeExpense`, `removeAd` (confirm + undo toast). `meta.ts`: `categoryTone`, `categoryFill` (static Tailwind classes), `categoryEmoji`, `UNIT_KEYS`, `CHANNEL_KEYS`.
+- Reusable `components/FormSheet.tsx` (create/edit frame: skeleton while loading, not-found state, Save + Delete footer) and `hooks/useFormState.ts` (`{form, update, err, handleSubmit(onValid), formRef}`: errors after the first submit, then live; focuses the first invalid field). Use both for future simple forms.
+- `lib/money.ts`: `formatNumber(n, lang)`.
+- i18n `expenses.*` (categories, units, channels, form/adForm, toasts, a11y).
+- FAB on Expenses opens a new expense or ad depending on the active segment.
+- e2e: an "Expenses & Ads" section with 7 flows (unit cost live + saved, future date rejected, month grouping, edit, ads add/delete/undo, persistence) plus per-step timings. 17 flows in ~20 s.
+
+**Fixed**
+- On phones the toast stack sat on top of the FAB, blocking "+" for 3–6 s after every save. Toasts now sit above it (`bottom: 10.75rem + safe area`).
+- Russian month headers no longer end with " г." (`formatMonth` → "Ноябрь 2026").
+- `scripts/e2e.mjs` now calls `process.exit`, because lingering puppeteer handles kept node alive ~4.5 min after finishing.
+- Unit cost is shown as "{price} / {unit}" (free-text units made "за листов" ungrammatical).

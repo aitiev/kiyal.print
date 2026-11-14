@@ -125,6 +125,7 @@ export function formatDate(iso: ISODate, lang: Lang, now: Date | number = Date.n
 export function formatMonth(key: string, lang: Lang): string {
   const d = parseISODate(`${key}-01`)
   if (!d) return key
-  const s = new Intl.DateTimeFormat(LOCALE[lang], { month: 'long', year: 'numeric' }).format(d)
+  // Russian Intl appends " г." ("ноябрь 2026 г."); drop it for compact headers.
+  const s = new Intl.DateTimeFormat(LOCALE[lang], { month: 'long', year: 'numeric' }).format(d).replace(/\s*г\.$/, '')
   return s.charAt(0).toUpperCase() + s.slice(1)
 }

@@ -91,3 +91,8 @@ export function toInputString(amount: Minor | undefined | null, lang: Lang): str
   const s = String(Number(major.toFixed(2)))
   return lang === 'ru' ? s.replace('.', ',') : s
 }
+
+/** Plain localised number (quantities): "1 500", "2,5". */
+export function formatNumber(n: number, lang: Lang): string {
+  return nf(LOCALE[lang], { maximumFractionDigits: 2 }).format(n)
+}

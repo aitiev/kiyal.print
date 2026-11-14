@@ -39,6 +39,6 @@ describe('dates', () => {
   })
   it('formats months', () => {
     expect(formatMonth('2026-11', 'en')).toBe('November 2026')
-    expect(formatMonth('2026-11', 'ru')).toMatch(/^Ноябрь 2026/)
+    expect(formatMonth('2026-11', 'ru')).toBe('Ноябрь 2026')
   })
 })
