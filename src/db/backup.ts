@@ -5,11 +5,15 @@
  *  - replace: wipe all tables, then insert the file contents.
  *  - merge: upsert by id; on conflict the row with the newer `updatedAt` wins
  *    (settings: local values are kept, missing keys are added).
+ * Device-local settings (PIN, lock timeout, last backup time) are never exported or restored.
  */
 import { db, type KyialDB } from './schema'
 import type { Ad, Expense, Goal, Order, SettingRow } from './types'
 import { EXPENSE_CATEGORIES, GOAL_TYPES, PAYMENT_STATUSES, PRODUCTS, SOURCES, WORK_STATUSES } from './types'
 import { isValidISODate, toISODate } from '@/lib/dates'
+import { DEVICE_SETTING_KEYS } from './repositories/settings'
+
+const isDeviceSetting = (r: { key: string }) => DEVICE_SETTING_KEYS.includes(r.key)
 
 export const BACKUP_APP = 'kyialprint'
 export const BACKUP_SCHEMA_VERSION = 1
@@ -37,7 +41,7 @@ export async function exportBackup(database: KyialDB = db, now = Date.now()): Pr
     expenses: await database.expenses.toArray(),
     ads: await database.ads.toArray(),
     goals: await database.goals.toArray(),
-    settings: await database.settings.toArray(),
+    settings: (await database.settings.toArray()).filter((r) => !isDeviceSetting(r)),
   }))
   return { app: BACKUP_APP, schemaVersion: BACKUP_SCHEMA_VERSION, exportedAt: now, data }
 }
@@ -161,9 +165,11 @@ export async function restoreBackup(file: BackupFile, mode: RestoreMode, databas
 
   await database.transaction('rw', tables, async () => {
     if (mode === 'replace') {
+      const keep = (await database.settings.toArray()).filter(isDeviceSetting)
       for (const t of tables) await t.clear()
+      await database.settings.bulkAdd(keep)
       for (const name of DATA_TABLES) {
-        const rows = file.data[name]
+        const rows = name === 'settings' ? file.data.settings.filter((r) => !isDeviceSetting(r)) : file.data[name]
         await database.table(name).bulkAdd(rows)
         report[name].added = rows.length
       }
@@ -172,7 +178,7 @@ export async function restoreBackup(file: BackupFile, mode: RestoreMode, databas
     for (const name of DATA_TABLES) {
       const table = database.table(name)
       const keyOf = (r: Rec) => (name === 'settings' ? r.key : r.id) as string
-      const rows = file.data[name] as unknown as Rec[]
+      const rows = (name === 'settings' ? file.data.settings.filter((r) => !isDeviceSetting(r)) : file.data[name]) as unknown as Rec[]
       const existing = await table.bulkGet(rows.map(keyOf))
       const toPut: Rec[] = []
       rows.forEach((row, i) => {

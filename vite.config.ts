@@ -4,12 +4,19 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
+import { readFileSync } from 'node:fs'
+
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }
 
 // BASE lets GitHub Pages serve from /<repo>/ (e.g. BASE=/kyialprint/ npm run build)
 const base = process.env.BASE ?? '/'
 
 export default defineConfig({
   base,
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  // The main chunk (~620 kB: React, framer-motion, Dexie, date-fns) is precached by the service worker,
+  // so it is downloaded once; Recharts is already split out (lazy IncomeChart).
+  build: { chunkSizeWarningLimit: 700 },
   plugins: [
     react(),
     tailwindcss(),

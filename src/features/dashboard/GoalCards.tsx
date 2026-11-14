@@ -86,10 +86,18 @@ export function IncomeGoalCard({ target, current }: { target: Minor | undefined;
           </Button>
         </>
       )}
-      <Sheet open={open} onClose={() => setOpen(false)} title={t('dashboard.goal.sheetTitle')} size="sm">
-        {open && <GoalForm target={gp ? gp.target : undefined} onDone={() => setOpen(false)} />}
-      </Sheet>
+      <GoalSheet open={open} onClose={() => setOpen(false)} target={gp ? gp.target : undefined} />
     </Card>
+  )
+}
+
+/** Set / edit / remove the monthly income goal. Used by the dashboard and Settings. */
+export function GoalSheet({ open, onClose, target }: { open: boolean; onClose: () => void; target: Minor | undefined }) {
+  const { t } = useT()
+  return (
+    <Sheet open={open} onClose={onClose} title={t('dashboard.goal.sheetTitle')} size="sm">
+      {open && <GoalForm target={target} onDone={onClose} />}
+    </Sheet>
   )
 }
 

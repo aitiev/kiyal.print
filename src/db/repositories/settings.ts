@@ -1,7 +1,10 @@
 import { db } from '../schema'
 
 /** Known setting keys (values are JSON-serialisable). */
-export type SettingKey = 'prefs' | 'pinHash' | 'lockTimeoutMin'
+export type SettingKey = 'prefs' | 'pinHash' | 'lockTimeoutMin' | 'lastBackupAt'
+
+/** Per-device settings: never exported, ignored on restore, kept by a "replace" restore. */
+export const DEVICE_SETTING_KEYS: readonly string[] = ['pinHash', 'lockTimeoutMin', 'lastBackupAt']
 
 export const settingsRepo = {
   async get<T>(key: SettingKey): Promise<T | undefined> {

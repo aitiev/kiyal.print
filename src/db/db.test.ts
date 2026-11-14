@@ -110,12 +110,26 @@ describe('backup', () => {
     expect((await ordersRepo.get(b.id))?.childName).toBe('B') // restored
     expect(await ordersRepo.get('extra')).toBeTruthy()
     expect(await settingsRepo.get('prefs')).toEqual({ lang: 'en' })
-    expect(await settingsRepo.get('pinHash')).toBe('x')
+    expect(await settingsRepo.get('pinHash')).toBeUndefined() // device-local: never restored
 
     // Newer row in the file overwrites the local one
     file.data.orders = [{ ...(await ordersRepo.get(a.id))!, childName: 'from-file', updatedAt: 9000 }]
     expect((await restoreBackup(file, 'merge')).orders.updated).toBe(1)
     expect((await ordersRepo.get(a.id))?.childName).toBe('from-file')
+  })
+
+  it('keeps device-local settings out of backups and through a replace restore', async () => {
+    await fill()
+    await settingsRepo.set('pinHash', { hash: 'local' })
+    await settingsRepo.set('lockTimeoutMin', 5)
+    const file = await exportBackup(db)
+    expect(file.data.settings.map((r) => r.key)).not.toContain('pinHash')
+    expect(file.data.settings.map((r) => r.key)).not.toContain('lockTimeoutMin')
+
+    file.data.settings.push({ key: 'pinHash', value: { hash: 'from-file' } })
+    await restoreBackup(file, 'replace')
+    expect(await settingsRepo.get('pinHash')).toEqual({ hash: 'local' })
+    expect(await settingsRepo.get('lockTimeoutMin')).toBe(5)
   })
 
   it('rejects invalid files with a precise error', async () => {

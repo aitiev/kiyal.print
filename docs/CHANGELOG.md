@@ -92,3 +92,17 @@
 - `Card` accepts `data-testid`.
 - i18n `dashboard.*` in ru and en.
 - e2e: a dashboard empty-state check plus a "Dashboard" section (seed → stats + chart, period switch, goal set/remove, due strip opens order, pending → filtered Orders). 23 flows in ~30 s.
+
+## Phase 6: Settings, backup, PIN, polish, docs (2026-11-15)
+**Added**
+- Settings screen: language, theme ("Авто" / light / dark), **currency** (KGS/RUB/KZT/UZS/USD/EUR presets, ISO code validated through `Intl`, custom symbol, live preview), **monthly goal** (reuses the dashboard `GoalSheet`), **backup**, **PIN**, **install**, demo data, about (version from `package.json` via `__APP_VERSION__`). Cards sit in a 2-column grid on iPad (`items-start`).
+- Backup UI (`features/settings/BackupCard.tsx`, `backupFile.ts`): export opens the share sheet on touch devices (`navigator.canShare` with a file) and downloads elsewhere; "last backup" time. Import: file picker → `validateBackup` (each error code has a readable message) → restore sheet with the file date and counts → merge / replace (replace asks for confirmation with the current counts) → `loadPrefsFromDb()` → summary toast.
+- PIN lock: `lib/pin.ts` (PBKDF2-SHA-256, 100k iterations, random salt; backoff 30 s doubling up to 5 min after 5 failures), `store/lock.ts` (`initLock`, `unlock`, `checkPin`, `setPin`, `disablePin`, `setLockTimeout`, `lockNow`; locks on start and after 0/1/5/15 min in the background; failure counter survives reloads), `features/lock/` (`PinPad` with dots, shake and hardware-keyboard input; `LockScreen` portal into `#lock-root` that makes everything else `inert`; `PinSheet` for set/change/disable). App renders nothing until the lock state is known, so no data flashes.
+- `lib/install.ts`: iOS/standalone detection and Chrome's deferred `beforeinstallprompt`; `InstallCard` shows the Install button or the Safari steps, or an "installed" note.
+- `MotionConfig reducedMotion="user"` for all framer-motion animations (CSS already respected the setting).
+- README (features, scripts, Cloudflare Pages + GitHub Pages deploy with the `BASE` note, iOS install, backup/PIN guidance, structure, known limitations) and `.github/workflows/pages.yml`.
+- Tests: PIN hashing/verify/backoff; device-local settings in backups. e2e "Settings" section (currency, export file, invalid file, replace restore round-trip with identical counts, PIN set → reload → wrong/right → disable, language switch): 30 flows. `shots.mjs` gains `--full` and a Chrome installability check (`Page.getInstallabilityErrors`).
+
+**Changed**
+- Device-local settings (`pinHash`, `lockTimeoutMin`, `lastBackupAt`; `DEVICE_SETTING_KEYS`) are never exported, are ignored on restore, and survive a replace restore, so a restore can't lock you out with an old PIN.
+- Version 1.0.0. `chunkSizeWarningLimit` 700 kB (the main chunk is precached once; Recharts is split out).

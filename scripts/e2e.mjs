@@ -357,6 +357,138 @@ await step('pending card opens orders filtered by payment', async () => {
   assert(!paid, 'paid orders are still listed')
 })
 
+// ---------------------------------------------------------------- Settings
+console.log('Settings')
+const { mkdtempSync, readdirSync, readFileSync, writeFileSync } = await import('node:fs')
+const { tmpdir } = await import('node:os')
+const { join } = await import('node:path')
+const dlDir = mkdtempSync(join(tmpdir(), 'kp-e2e-'))
+const cdp = await page.createCDPSession()
+await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: dlDir })
+/** Row counts straight from IndexedDB. */
+const counts = () =>
+  page.evaluate(
+    () =>
+      new Promise((resolve, reject) => {
+        const req = indexedDB.open('kyialprint')
+        req.onerror = () => reject(req.error)
+        req.onsuccess = () => {
+          const idb = req.result
+          const names = ['orders', 'expenses', 'ads']
+          const tx = idb.transaction(names, 'readonly')
+          const out = {}
+          names.forEach((n) => (tx.objectStore(n).count().onsuccess = (e) => (out[n] = e.target.result)))
+          tx.oncomplete = () => {
+            idb.close()
+            resolve(out)
+          }
+        }
+      }),
+  )
+const pressPin = async (pin) => {
+  for (const d of pin) {
+    await page.click(`[data-pin-key="${d}"]`)
+    await sleep(60)
+  }
+  await sleep(300)
+}
+await page.goto(`${base}#/settings`, { waitUntil: 'networkidle0' })
+
+await step('currency preset changes formatting, then back', async () => {
+  await clickText('USD · $')
+  await waitText('1 250,50 $')
+  await clickText('KGS · сом')
+  await waitText('1 250,50 сом')
+})
+
+let backupPath
+let before
+await step('export a backup file', async () => {
+  // Force the download path (headless Chrome's share sheet would never resolve).
+  await page.evaluate(() => Object.defineProperty(navigator, 'canShare', { value: undefined, configurable: true }))
+  before = await counts()
+  assert(before.orders > 0, 'no orders to back up')
+  await page.click('[data-testid=backup-export]')
+  await waitText('Файл копии скачан')
+  for (let i = 0; i < 20 && !readdirSync(dlDir).some((f) => f.endsWith('.json')); i++) await sleep(200)
+  const f = readdirSync(dlDir).find((x) => x.endsWith('.json'))
+  assert(f && f.startsWith('kyialprint-backup-'), 'no backup file downloaded')
+  backupPath = join(dlDir, f)
+  const json = JSON.parse(readFileSync(backupPath, 'utf8'))
+  assert(json.data.orders.length === before.orders, 'backup order count differs')
+  assert(!json.data.settings.some((r) => r.key === 'pinHash'), 'device keys exported')
+  await waitText('Последняя копия:')
+})
+
+await step('invalid file is rejected with a clear message', async () => {
+  const bad = join(dlDir, 'bad.json')
+  writeFileSync(bad, JSON.stringify({ hello: 1 }))
+  const input = await page.$('[data-testid=backup-input]')
+  await input.uploadFile(bad)
+  await waitText('Это не резервная копия KyialPrint')
+  assert(!(await page.$('[role=dialog]')), 'restore sheet opened for a bad file')
+})
+
+await step('restore (replace) round-trips without data loss', async () => {
+  await page.click('[data-testid=remove-demo]')
+  await page.waitForSelector('[data-testid=seed-demo]', { timeout: 8000 })
+  const mid = await counts()
+  assert(mid.orders < before.orders, 'demo data was not removed')
+  const input = await page.$('[data-testid=backup-input]')
+  await input.uploadFile(backupPath)
+  await page.waitForSelector('[role=dialog]')
+  await settled()
+  await waitText(`${before.orders} заказ`)
+  await clickText('Заменить всё', '[role=radio]')
+  await clickText('Восстановить', '[role=dialog] button')
+  await waitText('Заменить все данные?')
+  await clickButtonExact('Заменить')
+  await waitText('Готово: добавлено')
+  await noDialog()
+  const after = await counts()
+  assert(JSON.stringify(after) === JSON.stringify(before), `counts differ: ${JSON.stringify(after)} vs ${JSON.stringify(before)}`)
+  await page.waitForSelector('[data-testid=remove-demo]')
+})
+
+await step('set a PIN, reload → locked, wrong then right PIN', async () => {
+  await page.waitForFunction(() => !document.querySelector('[role=status]'), { timeout: 8000 })
+  await clickText('Установить PIN')
+  await page.waitForSelector('[data-pin-key="1"]')
+  await settled()
+  await pressPin('1234')
+  await waitText('Повторите PIN')
+  await pressPin('1234')
+  await waitText('PIN включён')
+  await noDialog()
+  await page.reload({ waitUntil: 'networkidle0' })
+  await page.waitForSelector('#lock-screen')
+  await waitText('KyialPrint заблокирован')
+  await pressPin('0000')
+  await waitText('Неверный PIN')
+  await pressPin('1234')
+  await page.waitForFunction(() => !document.querySelector('#lock-screen'), { timeout: 4000 })
+  await waitText('Отключить PIN')
+})
+
+await step('turn the PIN off', async () => {
+  await clickText('Отключить PIN')
+  await page.waitForSelector('[data-pin-key="1"]')
+  await settled()
+  await pressPin('1234')
+  await waitText('PIN отключён')
+  await noDialog()
+  await page.reload({ waitUntil: 'networkidle0' })
+  await waitText('Установить PIN')
+  assert(!(await page.$('#lock-screen')), 'still locked')
+})
+
+await step('switch to English and back', async () => {
+  await clickText('English', '[role=tab]')
+  await waitText('Backup')
+  await clickText('Русский', '[role=tab]')
+  await waitText('Резервная копия')
+})
+
 await browser.close()
 if (errors.length) {
   failed++
